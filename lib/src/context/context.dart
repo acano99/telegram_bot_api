@@ -9,8 +9,10 @@ class Context {
 
   Context({required this.bot, required this.update, required this.message});
 
-  Future<void> reply(String text) async{
-    if (message==null) return;
-    //await 
+  Future<void> reply(String text) async {
+    print('Context: $message');
+    if (message == null) return;
+    print('Context: $message');
+    await bot.sendMessage(chatId: message!.chat.id, text: text);
   }
 }
