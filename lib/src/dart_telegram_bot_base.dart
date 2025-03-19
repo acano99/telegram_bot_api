@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dart_telegram_bot/src/context/context.dart';
+import 'package:dart_telegram_bot/src/logger/logger.dart';
 import 'package:dart_telegram_bot/src/models/update.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,8 +12,18 @@ class DartTelegramBot {
   final String _telegramApi = 'https://api.telegram.org/bot';
   final Map<String, Future<void> Function(Context)> _commands = {};
   final List<Middleware> _middleware = [];
+  final Logger _logger;
 
-  DartTelegramBot({required this.token});
+  DartTelegramBot({
+    required this.token,
+    String logName = "TelegramBot",
+    bool logToFile = false,
+    String? logFilePath,
+  }) : _logger = Logger(
+         name: logName,
+         logToFile: logToFile,
+         logFilePath: logFilePath,
+       );
 
   void command(String name, Future<void> Function(Context) handler) {
     _commands[name] = handler;
@@ -33,12 +44,12 @@ class DartTelegramBot {
 
   Future<void> start({int pollingInterval = 1}) async {
     int lastUpdate = 0;
-    print("Iniciando bot...");
+    _logger.log(LogLevel.info, "Bot iniciado");
     while (true) {
       try {
-        print('Consultando updates desde $lastUpdate');
+        _logger.log(LogLevel.info, "Obteniendo updates");
         final updates = await _fetchUpdates(lastUpdate);
-        print('Updates recibidos: ${updates.length}');
+        _logger.log(LogLevel.info, "Updates recibidos ${updates.length}");
         for (final update in updates) {
           lastUpdate = update.updateId + 1;
           final context = Context(
@@ -46,11 +57,14 @@ class DartTelegramBot {
             update: update,
             message: update.message,
           );
-          print('Procesando mensaje ${context.message?.text}');
+          _logger.log(
+            LogLevel.info,
+            "Procesando mensaje ${context.message?.text}",
+          );
           await _processMessage(context);
         }
       } catch (e) {
-        print('Error: $e');
+        _logger.log(LogLevel.error, "Error al procesar mensaje: $e");
         await Future.delayed(Duration(seconds: pollingInterval));
       }
     }
@@ -86,7 +100,7 @@ class DartTelegramBot {
     );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print(data['result']);
+      _logger.log(LogLevel.debug, data['result'].toString());
       return (data['result'] as List).map((e) => Update.fromJson(e)).toList();
     } else {
       throw Exception('Error al obtener updates: ${response.statusCode}');
