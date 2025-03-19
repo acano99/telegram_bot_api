@@ -8,7 +8,9 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
+  ansicolor: ^2.0.3
   http: ^1.3.0
+  path: ^1.9.1
   # path: ^1.8.0
 
 dev_dependencies:
